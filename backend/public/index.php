@@ -3,6 +3,7 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use App\Controllers\AuthController;
+use App\Controllers\RouteController;
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
@@ -20,19 +21,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// Simple exact-match router. Grows as we add each endpoint from the plan —
-// admin/buses, admin/routes, driver/location, routes/{id}/eta, etc.
+// Router supports {param} placeholders now — needed for anything with an
+// id in the path (DELETE /api/admin/routes/5, and every resource after this).
 $routes = [
     'POST /api/auth/login' => [AuthController::class, 'login'],
+    'GET /api/admin/routes' => [RouteController::class, 'index'],
+    'POST /api/admin/routes' => [RouteController::class, 'store'],
+    'DELETE /api/admin/routes/{id}' => [RouteController::class, 'destroy'],
 ];
 
-$key = "{$method} {$path}";
+$handler = null;
+$params = [];
 
-if (!isset($routes[$key])) {
+foreach ($routes as $pattern => $target) {
+    [$patternMethod, $patternPath] = explode(' ', $pattern, 2);
+    if ($patternMethod !== $method) {
+        continue;
+    }
+
+    $regex = '#^' . preg_replace('/\{[a-zA-Z_]+\}/', '([^/]+)', $patternPath) . '$#';
+
+    if (preg_match($regex, $path, $matches)) {
+        array_shift($matches);
+        $params = $matches;
+        $handler = $target;
+        break;
+    }
+}
+
+if (!$handler) {
     http_response_code(404);
     echo json_encode(['error' => 'Not found', 'path' => $path]);
     exit;
 }
 
-[$controllerClass, $action] = $routes[$key];
-(new $controllerClass())->$action();
+[$controllerClass, $action] = $handler;
+(new $controllerClass())->$action(...$params);

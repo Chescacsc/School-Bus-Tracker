@@ -28,4 +28,19 @@ export function login(email, password) {
   });
 }
 
+export function getRoutes() {
+  return request('/admin/routes');
+}
+
+export function createRoute(payload) {
+  return request('/admin/routes', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteRoute(id) {
+  return request(`/admin/routes/${id}`, { method: 'DELETE' });
+}
+
 export { request };
