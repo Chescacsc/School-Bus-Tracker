@@ -4,6 +4,11 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use App\Controllers\AuthController;
 use App\Controllers\RouteController;
+use App\Controllers\UserController;
+use App\Controllers\BusController;
+use App\Controllers\RiderController;
+use App\Controllers\DriverController;
+use App\Controllers\PublicController;
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
@@ -21,13 +26,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// Router supports {param} placeholders now — needed for anything with an
+// Router supports {param} placeholders — needed for anything with an
 // id in the path (DELETE /api/admin/routes/5, and every resource after this).
 $routes = [
+    // Auth
     'POST /api/auth/login' => [AuthController::class, 'login'],
-    'GET /api/admin/routes' => [RouteController::class, 'index'],
-    'POST /api/admin/routes' => [RouteController::class, 'store'],
-    'DELETE /api/admin/routes/{id}' => [RouteController::class, 'destroy'],
+
+    // Admin — Routes
+    'GET /api/admin/routes'          => [RouteController::class, 'index'],
+    'POST /api/admin/routes'         => [RouteController::class, 'store'],
+    'DELETE /api/admin/routes/{id}'  => [RouteController::class, 'destroy'],
+
+    // Admin — Users
+    'GET /api/admin/users'           => [UserController::class, 'index'],
+    'POST /api/admin/users'          => [UserController::class, 'store'],
+    'DELETE /api/admin/users/{id}'   => [UserController::class, 'destroy'],
+
+    // Admin — Buses
+    'GET /api/admin/buses'           => [BusController::class, 'index'],
+    'POST /api/admin/buses'          => [BusController::class, 'store'],
+    'PUT /api/admin/buses/{id}'      => [BusController::class, 'update'],
+    'DELETE /api/admin/buses/{id}'   => [BusController::class, 'destroy'],
+
+    // Admin — Riders
+    'GET /api/admin/riders'          => [RiderController::class, 'index'],
+    'POST /api/admin/riders'         => [RiderController::class, 'store'],
+    'DELETE /api/admin/riders/{id}'  => [RiderController::class, 'destroy'],
+
+    // Driver
+    'GET /api/driver/me'             => [DriverController::class, 'me'],
+    'POST /api/driver/trip/start'    => [DriverController::class, 'startTrip'],
+    'POST /api/driver/trip/end'      => [DriverController::class, 'endTrip'],
+    'POST /api/driver/location'      => [DriverController::class, 'sendLocation'],
+
+    // Public (no auth)
+    'GET /api/routes'                => [PublicController::class, 'routes'],
+    'GET /api/routes/{id}/live'      => [PublicController::class, 'routeLive'],
 ];
 
 $handler = null;

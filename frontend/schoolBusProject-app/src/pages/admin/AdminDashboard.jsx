@@ -2,10 +2,16 @@ import { useEffect, useState, useCallback } from 'react';
 import { getRoutes, createRoute, deleteRoute } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import RouteForm from '../../components/RouteForm';
+import UsersPanel from './UsersPanel';
+import BusesPanel from './BusesPanel';
+import RidersPanel from './RidersPanel';
 import './AdminDashboard.css';
+
+const TABS = ['Routes', 'Users', 'Buses', 'Riders'];
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState('Routes');
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,8 +29,8 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    loadRoutes();
-  }, [loadRoutes]);
+    if (activeTab === 'Routes') loadRoutes();
+  }, [activeTab, loadRoutes]);
 
   async function handleCreate(payload) {
     await createRoute(payload);
@@ -49,34 +55,54 @@ export default function AdminDashboard() {
         </button>
       </header>
 
-      <div className="admin-layout">
-        <section className="routes-list">
-          <h2>Routes</h2>
-          {loading && <p>Loading…</p>}
-          {error && (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
-          )}
-          {!loading && routes.length === 0 && <p>No routes yet — create the first one.</p>}
+      <nav className="tab-bar">
+        {TABS.map((tab) => (
+          <button
+            key={tab}
+            className={`tab-btn${activeTab === tab ? ' active' : ''}`}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab}
+          </button>
+        ))}
+      </nav>
 
-          {routes.map((route) => (
-            <div className="route-card" key={route.id}>
-              <div className="route-card-head">
-                <h3>{route.name}</h3>
-                <button onClick={() => handleDelete(route.id)}>Delete</button>
-              </div>
-              {route.description && <p>{route.description}</p>}
-              <ol className="stop-list">
-                {route.stops.map((stop) => (
-                  <li key={stop.id}>{stop.name}</li>
-                ))}
-              </ol>
-            </div>
-          ))}
-        </section>
+      <div className="tab-content">
+        {activeTab === 'Routes' && (
+          <div className="admin-layout">
+            <section className="routes-list">
+              <h2>Routes</h2>
+              {loading && <p>Loading…</p>}
+              {error && (
+                <p className="form-error" role="alert">
+                  {error}
+                </p>
+              )}
+              {!loading && routes.length === 0 && <p>No routes yet — create the first one.</p>}
 
-        <RouteForm onCreate={handleCreate} />
+              {routes.map((route) => (
+                <div className="route-card" key={route.id}>
+                  <div className="route-card-head">
+                    <h3>{route.name}</h3>
+                    <button onClick={() => handleDelete(route.id)}>Delete</button>
+                  </div>
+                  {route.description && <p>{route.description}</p>}
+                  <ol className="stop-list">
+                    {route.stops.map((stop) => (
+                      <li key={stop.id}>{stop.name}</li>
+                    ))}
+                  </ol>
+                </div>
+              ))}
+            </section>
+
+            <RouteForm onCreate={handleCreate} />
+          </div>
+        )}
+
+        {activeTab === 'Users' && <UsersPanel />}
+        {activeTab === 'Buses' && <BusesPanel />}
+        {activeTab === 'Riders' && <RidersPanel />}
       </div>
     </div>
   );
