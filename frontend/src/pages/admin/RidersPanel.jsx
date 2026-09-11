@@ -20,7 +20,6 @@ export default function RidersPanel() {
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
     try {
       const [riderData, routeData, parentData] = await Promise.all([
         getRiders(),
@@ -48,7 +47,18 @@ export default function RidersPanel() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let ignore = false;
+    async function init() {
+      if (!ignore) {
+        await load();
+      }
+    }
+    init();
+    return () => {
+      ignore = true;
+    };
+  }, [load]);
 
   async function handleCreate(e) {
     e.preventDefault();

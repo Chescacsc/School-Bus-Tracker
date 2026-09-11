@@ -17,7 +17,6 @@ export default function AdminDashboard() {
   const [error, setError] = useState('');
 
   const loadRoutes = useCallback(async () => {
-    setLoading(true);
     try {
       const data = await getRoutes();
       setRoutes(data);
@@ -29,7 +28,16 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'Routes') loadRoutes();
+    let ignore = false;
+    async function init() {
+      if (activeTab === 'Routes' && !ignore) {
+        await loadRoutes();
+      }
+    }
+    init();
+    return () => {
+      ignore = true;
+    };
   }, [activeTab, loadRoutes]);
 
   async function handleCreate(payload) {

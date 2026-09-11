@@ -1,11 +1,10 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { getPublicRoutes, getRouteLive } from '../api/client';
 import './ParentView.css';
 
-// Fix Leaflet's default icon path issues
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -34,20 +33,17 @@ const targetStopIcon = new L.Icon({
   popupAnchor: [0, -36],
 });
 
-// Component to handle auto-panning to user location on first load
-function MapController({ userLocation, liveData, selectedRouteId, selectedStopId }) {
+function MapController({ userLocation, liveData, selectedRouteId }) {
   const map = useMap();
-  const [initialPanDone, setInitialPanDone] = useState(false);
+  const initialPanDoneRef = useRef(false);
 
-  // Initial pan to user location
   useEffect(() => {
-    if (userLocation && !initialPanDone && !selectedRouteId) {
+    if (userLocation && !initialPanDoneRef.current && !selectedRouteId) {
       map.setView(userLocation, 14, { animate: true });
-      setInitialPanDone(true);
+      initialPanDoneRef.current = true;
     }
-  }, [userLocation, initialPanDone, selectedRouteId, map]);
+  }, [userLocation, selectedRouteId, map]);
 
-  // Fit bounds when route/live data loads
   useEffect(() => {
     if (liveData && liveData.stops && liveData.stops.length > 0) {
       const bounds = L.latLngBounds(liveData.stops.map(s => [s.latitude, s.longitude]));
@@ -63,7 +59,6 @@ function MapController({ userLocation, liveData, selectedRouteId, selectedStopId
 export default function ParentView() {
   const [routes, setRoutes] = useState([]);
   
-  // UX Steps: 'SELECT_ROUTE' -> 'SELECT_STOP' -> 'TRACKING'
   const [step, setStep] = useState('SELECT_ROUTE');
   const [selectedRouteId, setSelectedRouteId] = useState('');
   const [selectedStopId, setSelectedStopId] = useState('');
@@ -85,7 +80,6 @@ export default function ParentView() {
     fetchRoutes();
   }, []);
 
-  // Track viewer location
   useEffect(() => {
     if ('geolocation' in navigator) {
       const watchId = navigator.geolocation.watchPosition(
@@ -97,28 +91,32 @@ export default function ParentView() {
     }
   }, []);
 
-  const fetchLiveRoute = useCallback(async (routeId) => {
-    if (!routeId) return;
-    try {
-      const data = await getRouteLive(routeId);
-      setLiveData(data);
-    } catch (err) {
-      console.error('Could not load live route data.');
-    }
-  }, []);
-
   useEffect(() => {
-    if (selectedRouteId) {
-      fetchLiveRoute(selectedRouteId);
-      pollIntervalRef.current = setInterval(() => fetchLiveRoute(selectedRouteId), 5000);
-    } else {
-      setLiveData(null);
+    if (!selectedRouteId) {
+      return;
     }
+
+    let ignore = false;
+
+    async function loadLiveData() {
+      try {
+        const data = await getRouteLive(selectedRouteId);
+        if (!ignore) {
+          setLiveData(data);
+        }
+      } catch {
+        console.error('Could not load live route data.');
+      }
+    }
+
+    loadLiveData();
+    pollIntervalRef.current = setInterval(loadLiveData, 5000);
 
     return () => {
+      ignore = true;
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
-  }, [selectedRouteId, fetchLiveRoute]);
+  }, [selectedRouteId]);
 
   const handleRouteSelect = (routeId) => {
     setSelectedRouteId(routeId);
@@ -174,7 +172,6 @@ export default function ParentView() {
             userLocation={userLocation} 
             liveData={liveData} 
             selectedRouteId={selectedRouteId} 
-            selectedStopId={selectedStopId}
           />
           
           {liveData && (
@@ -183,7 +180,7 @@ export default function ParentView() {
                 <Polyline positions={routePath} color="var(--accent)" weight={4} opacity={0.6} />
               )}
               
-              {liveData.stops?.map((stop, i) => {
+              {liveData.stops?.map((stop) => {
                 const isSelected = stop.id === parseInt(selectedStopId, 10);
                 return (
                   <Marker 

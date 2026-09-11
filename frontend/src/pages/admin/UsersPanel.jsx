@@ -16,7 +16,6 @@ export default function UsersPanel() {
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
     try {
       const data = await getUsers();
       setUsers(data);
@@ -27,7 +26,18 @@ export default function UsersPanel() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let ignore = false;
+    async function init() {
+      if (!ignore) {
+        await load();
+      }
+    }
+    init();
+    return () => {
+      ignore = true;
+    };
+  }, [load]);
 
   async function handleCreate(e) {
     e.preventDefault();

@@ -27,7 +27,6 @@ export default function BusesPanel() {
   const [editStatus, setEditStatus] = useState('');
 
   const load = useCallback(async () => {
-    setLoading(true);
     try {
       const [busData, routeData, userData] = await Promise.all([
         getBuses(),
@@ -44,7 +43,18 @@ export default function BusesPanel() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let ignore = false;
+    async function init() {
+      if (!ignore) {
+        await load();
+      }
+    }
+    init();
+    return () => {
+      ignore = true;
+    };
+  }, [load]);
 
   async function handleCreate(e) {
     e.preventDefault();
