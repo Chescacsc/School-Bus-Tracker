@@ -80,11 +80,10 @@ export default function Login() {
           attributionControl={false}
           style={{ width: '100%', height: '100%' }}
         >
-          {/* Dark CartoDB tile — matches right-panel theme */}
+          {/* Free OSM tiles — darkened via CSS filter in Login.css */}
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            subdomains="abcd"
-            maxZoom={20}
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={19}
           />
 
           <FlyToUser position={userPos} />
