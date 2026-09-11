@@ -19,10 +19,18 @@ try {
     ]);
     echo "Connected successfully to MySQL server." . PHP_EOL;
 
-    echo "Importing schema from database/schoolBus.sql..." . PHP_EOL;
+    echo "Checking schema in database/schoolBus.sql..." . PHP_EOL;
     $sql = file_get_contents(__DIR__ . '/database/schoolBus.sql');
-    $pdo->exec($sql);
-    echo "Schema imported successfully!" . PHP_EOL;
+    try {
+        $pdo->exec($sql);
+        echo "Schema imported successfully!" . PHP_EOL;
+    } catch (PDOException $e) {
+        if ($e->getCode() === '42S01' || str_contains($e->getMessage(), 'already exists')) {
+            echo "Schema tables already exist. Proceeding with verification..." . PHP_EOL;
+        } else {
+            throw $e;
+        }
+    }
 
     // Switch to database and check tables
     $pdo->exec("USE `{$dbname}`");
