@@ -2,7 +2,7 @@
 
 namespace App\Helpers;
 
-use Firebase\JWT\JWT;
+use Firebase\JWT\JWT as FirebaseJWT;
 use Firebase\JWT\Key;
 use Exception;
 
@@ -19,13 +19,13 @@ class Jwt
         $payload['iat'] = time();
         $payload['exp'] = time() + $expiresInSeconds;
 
-        return JWT::encode($payload, self::secret(), 'HS256');
+        return FirebaseJWT::encode($payload, self::secret(), 'HS256');
     }
 
     public static function verify(string $token): ?array
     {
         try {
-            $decoded = JWT::decode($token, new Key(self::secret(), 'HS256'));
+            $decoded = FirebaseJWT::decode($token, new Key(self::secret(), 'HS256'));
             return (array) $decoded;
         } catch (Exception $e) {
             return null;
