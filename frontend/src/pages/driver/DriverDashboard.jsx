@@ -17,45 +17,18 @@ export default function DriverDashboard() {
   
   const watchIdRef = useRef(null);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await getDriverInfo();
-      setBus(data.bus);
-      setRoute(data.route);
-      setRoster(data.roster || []);
-      if (data.bus) {
-        setIsOnTrip(data.bus.is_on_trip);
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+  const stopLocationTracking = useCallback(() => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
     }
   }, []);
 
-  useEffect(() => {
-    loadData();
-    return () => stopLocationTracking();
-  }, [loadData]);
-
-  // When trip status changes, manage location tracking
-  useEffect(() => {
-    if (isOnTrip) {
-      startLocationTracking();
-    } else {
-      stopLocationTracking();
-    }
-  }, [isOnTrip]);
-
-  const startLocationTracking = () => {
+  const startLocationTracking = useCallback(() => {
     if (!navigator.geolocation) {
-      setLocationStatus('Geolocation is not supported by your browser.');
       return;
     }
 
-    setLocationStatus('Waiting for GPS signal...');
-    
     // We send location periodically. In a real app, we'd use watchPosition 
     // or a background service with high accuracy.
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -80,23 +53,56 @@ export default function DriverDashboard() {
         maximumAge: 0
       }
     );
-  };
+  }, []);
 
-  const stopLocationTracking = () => {
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
+  const loadData = useCallback(async () => {
+    try {
+      const data = await getDriverInfo();
+      setBus(data.bus);
+      setRoute(data.route);
+      setRoster(data.roster || []);
+      if (data.bus) {
+        setIsOnTrip(data.bus.is_on_trip);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    setLocationStatus('');
-  };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+    async function init() {
+      if (!ignore) {
+        await loadData();
+      }
+    }
+    init();
+    return () => {
+      ignore = true;
+      stopLocationTracking();
+    };
+  }, [loadData, stopLocationTracking]);
+
+  // When trip status changes, manage location tracking
+  useEffect(() => {
+    if (isOnTrip) {
+      startLocationTracking();
+    } else {
+      stopLocationTracking();
+    }
+  }, [isOnTrip, startLocationTracking, stopLocationTracking]);
 
   const handleStartTrip = async () => {
     try {
       setError('');
+      setLocationStatus('Waiting for GPS signal...');
       await startTrip();
       setIsOnTrip(true);
     } catch (err) {
       setError(`Failed to start trip: ${err.message}`);
+      setLocationStatus('');
     }
   };
 
@@ -105,6 +111,7 @@ export default function DriverDashboard() {
       setError('');
       await endTrip();
       setIsOnTrip(false);
+      setLocationStatus('');
     } catch (err) {
       setError(`Failed to end trip: ${err.message}`);
     }
