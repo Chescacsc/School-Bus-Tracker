@@ -15,8 +15,8 @@ class AuthMiddleware
      */
     public static function requireAuth(?string $requiredRole = null): array
     {
-        $headers = getallheaders();
-        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+        $headers = function_exists('getallheaders') ? getallheaders() : [];
+        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
 
         if (!str_starts_with($authHeader, 'Bearer ')) {
             self::deny('Missing or malformed Authorization header');
