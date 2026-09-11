@@ -52,8 +52,10 @@
 .login-form-panel {
   background: var(--bg);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1.25rem;
   padding: 2rem;
 }
 
@@ -128,6 +130,29 @@
   font-size: 0.9rem;
 }
 
+/* "Back to Live Map" link shown below the sign-in form */
+.back-to-map {
+  margin: 0;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.back-to-map a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.back-to-map a:hover {
+  color: var(--ink);
+  background: var(--line);
+}
+
 @media (max-width: 720px) {
   .login-screen {
     grid-template-columns: 1fr;
@@ -142,7 +167,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .login-form button {
+  .login-form button,
+  .back-to-map a {
     transition: none;
   }
 }
